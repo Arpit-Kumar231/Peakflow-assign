@@ -1,4 +1,8 @@
-import React from "react";
+"use client";
+
+import { useState } from "react";
+import { DragDropContext, Droppable, Draggable } from "react-beautiful-dnd";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import {
@@ -7,27 +11,230 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { MoreHorizontal, BarChart2 } from "lucide-react";
+
+type Task = {
+  id: string;
+  title: string;
+  description: string;
+  status: "new" | "ongoing" | "completed";
+  metrics?: string;
+  date?: string;
+};
 
 export default function MainPage() {
+  const [newTasks, setNewTasks] = useState<Task[]>([
+    {
+      id: "FYR-2993",
+      title: "Setup user authentication flow",
+      description:
+        "Implement user registration, login, and password reset functionality",
+      status: "new",
+    },
+    {
+      id: "FYR-2981",
+      title: "Implement error handling for API requests",
+      description:
+        "Create a global error handling mechanism for all API requests",
+      status: "new",
+    },
+  ]);
+
+  const [ongoingTasks, setOngoingTasks] = useState<Task[]>([
+    {
+      id: "FYR-3022",
+      title: "Design system implementation",
+      description:
+        "Create and implement a consistent design system across the application",
+      status: "ongoing",
+    },
+    {
+      id: "FYR-3011",
+      title: "Mobile responsive layouts",
+      description: "Ensure all pages are fully responsive on mobile devices",
+      metrics: "#1275",
+      status: "ongoing",
+    },
+    {
+      id: "FYR-2957",
+      title: "Performance optimization",
+      description:
+        "Identify and resolve performance bottlenecks in the application",
+      date: "Nov 8",
+      status: "ongoing",
+    },
+  ]);
+
+  const [completedTasks, setCompletedTasks] = useState<Task[]>([
+    {
+      id: "FYR-3030",
+      title: "User settings page",
+      description: "Create a page for users to manage their account settings",
+      metrics: "#1218",
+      status: "completed",
+    },
+    {
+      id: "FYR-2879",
+      title: "Email notification system",
+      description:
+        "Implement a system for sending automated email notifications",
+      metrics: "#1179",
+      status: "completed",
+    },
+  ]);
+
+  const onDragEnd = (result) => {
+    const { source, destination } = result;
+
+    if (!destination) {
+      return;
+    }
+
+    if (
+      source.droppableId === destination.droppableId &&
+      source.index === destination.index
+    ) {
+      return;
+    }
+
+    let add;
+    let newTasksCopy = Array.from(newTasks);
+    let ongoingTasksCopy = Array.from(ongoingTasks);
+    let completedTasksCopy = Array.from(completedTasks);
+
+    if (source.droppableId === "new") {
+      [add] = newTasksCopy.splice(source.index, 1);
+    } else if (source.droppableId === "ongoing") {
+      [add] = ongoingTasksCopy.splice(source.index, 1);
+    } else {
+      [add] = completedTasksCopy.splice(source.index, 1);
+    }
+
+    if (destination.droppableId === "new") {
+      newTasksCopy.splice(destination.index, 0, { ...add, status: "new" });
+    } else if (destination.droppableId === "ongoing") {
+      ongoingTasksCopy.splice(destination.index, 0, {
+        ...add,
+        status: "ongoing",
+      });
+    } else {
+      completedTasksCopy.splice(destination.index, 0, {
+        ...add,
+        status: "completed",
+      });
+    }
+
+    setNewTasks(newTasksCopy);
+    setOngoingTasks(ongoingTasksCopy);
+    setCompletedTasks(completedTasksCopy);
+  };
+
+  const columns = [
+    { id: "new", title: "New", tasks: newTasks },
+    { id: "ongoing", title: "Ongoing", tasks: ongoingTasks },
+    { id: "completed", title: "Completed", tasks: completedTasks },
+  ];
+
   return (
-    <div>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild>
-          <Button
-            variant="ghost"
-            className="h-6 w-6 p-0 text-gray-300 hover:text-gray-100"
-          >
-            <span className="sr-only">Open menu</span>
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="bg-[#17181c] text-gray-100">
-          <DropdownMenuItem>Edit</DropdownMenuItem>
-          <DropdownMenuItem>Move</DropdownMenuItem>
-          <DropdownMenuItem className="text-red-400">Delete</DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
-    </div>
+    <DragDropContext onDragEnd={onDragEnd}>
+      <div className="min-h-screen bg-[#0e0e0e] p-4">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 w-full min-h-full flex flex-col">
+          {columns.map((column) => (
+            <Droppable key={column.id} droppableId={column.id}>
+              {(provided) => (
+                <div
+                  ref={provided.innerRef}
+                  {...provided.droppableProps}
+                  className="flex flex-col gap-3"
+                >
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-semibold text-gray-100">
+                      {column.title}
+                    </h2>
+                    <span className="text-sm text-gray-300">
+                      {column.tasks.length}
+                    </span>
+                  </div>
+                  {column.tasks.map((task, index) => (
+                    <Draggable
+                      key={task.id}
+                      draggableId={task.id}
+                      index={index}
+                    >
+                      {(provided) => (
+                        <Card
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className="bg-[#17181c] border-gray-600 shadow-md hover:shadow-lg transition-shadow duration-200"
+                        >
+                          <CardHeader className="flex flex-row items-center justify-between py-2 px-3">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xs font-medium text-gray-300">
+                                {task.id}
+                              </span>
+                              {task.metrics && (
+                                <div className="flex items-center gap-1 text-xs text-gray-300">
+                                  <BarChart2 className="h-3 w-3" />
+                                  {task.metrics}
+                                </div>
+                              )}
+                            </div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  className="h-6 w-6 p-0 text-gray-300 hover:text-gray-100"
+                                >
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent
+                                align="end"
+                                className="bg-[#17181c] text-gray-100"
+                              >
+                                <DropdownMenuItem>Edit</DropdownMenuItem>
+                                <DropdownMenuItem>Move</DropdownMenuItem>
+                                <DropdownMenuItem className="text-red-400">
+                                  Delete
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </CardHeader>
+                          <CardContent className="py-2 px-3">
+                            <h3 className="text-sm font-medium text-gray-100 mb-1">
+                              {task.title}
+                            </h3>
+                            <p className="text-xs text-gray-400 mb-2">
+                              {task.description}
+                            </p>
+                            <div className="flex items-center justify-between">
+                              <Avatar className="h-5 w-5">
+                                <AvatarImage
+                                  src="/placeholder-user.jpg"
+                                  alt="User avatar"
+                                />
+                                <AvatarFallback>U</AvatarFallback>
+                              </Avatar>
+                              {task.date && (
+                                <span className="text-xs text-gray-300">
+                                  {task.date}
+                                </span>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
+              )}
+            </Droppable>
+          ))}
+        </div>
+      </div>
+    </DragDropContext>
   );
 }
