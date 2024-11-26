@@ -36,7 +36,7 @@ const PriorityIcon = ({ priority }: { priority: Priority }) => {
 }
 
 export default function KanbanBoard() {
-  const [newTasks, setNewTasks] = useState<Task[]>([
+  const [tasks, setTasks] = useState<Task[]>([
     {
       id: "FYR-2993",
       title: "Setup user authentication flow",
@@ -51,9 +51,6 @@ export default function KanbanBoard() {
       status: "new",
       priority: "medium",
     },
-  ])
-
-  const [ongoingTasks, setOngoingTasks] = useState<Task[]>([
     {
       id: "FYR-3022",
       title: "Design system implementation",
@@ -76,9 +73,6 @@ export default function KanbanBoard() {
       status: "ongoing",
       priority: "low",
     },
-  ])
-
-  const [completedTasks, setCompletedTasks] = useState<Task[]>([
     {
       id: "FYR-3030",
       title: "User settings page",
@@ -109,49 +103,33 @@ export default function KanbanBoard() {
       return
     }
 
-    let add
-    let newTasksCopy = Array.from(newTasks)
-    let ongoingTasksCopy = Array.from(ongoingTasks)
-    let completedTasksCopy = Array.from(completedTasks)
+    const newTasks = Array.from(tasks)
+    const [reorderedItem] = newTasks.splice(source.index, 1)
+    reorderedItem.status = destination.droppableId as Task['status']
+    newTasks.splice(destination.index, 0, reorderedItem)
 
-    if (source.droppableId === 'new') {
-      [add] = newTasksCopy.splice(source.index, 1)
-    } else if (source.droppableId === 'ongoing') {
-      [add] = ongoingTasksCopy.splice(source.index, 1)
-    } else {
-      [add] = completedTasksCopy.splice(source.index, 1)
-    }
-
-    if (destination.droppableId === 'new') {
-      newTasksCopy.splice(destination.index, 0, { ...add, status: 'new' })
-    } else if (destination.droppableId === 'ongoing') {
-      ongoingTasksCopy.splice(destination.index, 0, { ...add, status: 'ongoing' })
-    } else {
-      completedTasksCopy.splice(destination.index, 0, { ...add, status: 'completed' })
-    }
-
-    setNewTasks(newTasksCopy)
-    setOngoingTasks(ongoingTasksCopy)
-    setCompletedTasks(completedTasksCopy)
+    setTasks(newTasks)
   }
 
   const columns = [
-    { id: 'new', title: "New", tasks: newTasks },
-    { id: 'ongoing', title: "Ongoing", tasks: ongoingTasks },
-    { id: 'completed', title: "Completed", tasks: completedTasks },
+    { id: 'new', title: "New", tasks: tasks.filter(task => task.status === 'new') },
+    { id: 'ongoing', title: "Ongoing", tasks: tasks.filter(task => task.status === 'ongoing') },
+    { id: 'completed', title: "Completed", tasks: tasks.filter(task => task.status === 'completed') },
   ]
 
   return (
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="min-h-screen bg-[#0e0e0e] p-4">
-        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3 w-full min-h-full flex flex-col">
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
           {columns.map((column) => (
             <Droppable key={column.id} droppableId={column.id}>
-              {(provided) => (
+              {(provided, snapshot) => (
                 <div
                   ref={provided.innerRef}
                   {...provided.droppableProps}
-                  className="flex flex-col gap-3"
+                  className={`flex flex-col gap-3 p-4 rounded-lg ${
+                    snapshot.isDraggingOver ? 'bg-[#1e1f23]' : 'bg-[#17181c]'
+                  }`}
                 >
                   <div className="flex items-center gap-2">
                     <h2 className="text-lg font-semibold text-gray-100">{column.title}</h2>
@@ -159,12 +137,17 @@ export default function KanbanBoard() {
                   </div>
                   {column.tasks.map((task, index) => (
                     <Draggable key={task.id} draggableId={task.id} index={index}>
-                      {(provided) => (
+                      {(provided, snapshot) => (
                         <Card
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className="bg-[#17181c] border-gray-600 shadow-md hover:shadow-lg transition-shadow duration-200"
+                          className={`bg-[#17181c] border-gray-600 shadow-md transition-shadow duration-200 ${
+                            snapshot.isDragging ? 'shadow-lg' : ''
+                          }`}
+                          style={{
+                            ...provided.draggableProps.style,
+                          }}
                         >
                           <CardHeader className="flex flex-row items-center justify-between py-2 px-3">
                             <div className="flex items-center gap-2">
