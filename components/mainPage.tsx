@@ -35,6 +35,7 @@ import {
   ArrowDown,
   Plus,
 } from "lucide-react";
+import { Navbar } from "./navbar";
 
 type Priority = "high" | "medium" | "low";
 
@@ -197,6 +198,8 @@ export default function KanbanBoard() {
   ];
 
   return (
+    <div>
+    <Navbar />
     <DragDropContext onDragEnd={onDragEnd}>
       <div className="min-h-screen bg-[#0e0e0e] p-4">
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
@@ -375,5 +378,6 @@ export default function KanbanBoard() {
         </DialogContent>
       </Dialog>
     </DragDropContext>
+    </div>
   );
 }
